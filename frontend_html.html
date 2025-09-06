@@ -1,0 +1,1065 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QuickRide - Book Your Ride</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            font-size: 3rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            margin-top: 40px;
+        }
+
+        .auth-section, .booking-section {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .section-title {
+            font-size: 1.8rem;
+            font-weight: bold;
+            margin-bottom: 30px;
+            color: #4a5568;
+            text-align: center;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #4a5568;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            background: rgba(255,255,255,0.8);
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            transform: translateY(-1px);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-secondary {
+            background: #48bb78;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #38a169;
+            transform: translateY(-2px);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .ride-type-selector {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .ride-type {
+            padding: 20px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: rgba(255,255,255,0.8);
+        }
+
+        .ride-type:hover {
+            border-color: #667eea;
+            transform: translateY(-2px);
+        }
+
+        .ride-type.active {
+            border-color: #667eea;
+            background: rgba(102, 126, 234, 0.1);
+        }
+
+        .ride-type i {
+            font-size: 2rem;
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .ride-type .name {
+            font-weight: 600;
+            color: #4a5568;
+        }
+
+        .ride-type .price {
+            font-size: 0.9rem;
+            color: #718096;
+            margin-top: 5px;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+
+        .alert-success {
+            background: #c6f6d5;
+            border: 1px solid #9ae6b4;
+            color: #22543d;
+        }
+
+        .alert-error {
+            background: #fed7d7;
+            border: 1px solid #feb2b2;
+            color: #742a2a;
+        }
+
+        .alert-info {
+            background: #bee3f8;
+            border: 1px solid #90cdf4;
+            color: #2a4365;
+        }
+
+        .loading {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #ffffff;
+            border-top: 2px solid transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .ride-history {
+            margin-top: 30px;
+        }
+
+        .ride-card {
+            background: rgba(255,255,255,0.9);
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            transition: all 0.3s ease;
+        }
+
+        .ride-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .ride-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .ride-status {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-completed {
+            background: #c6f6d5;
+            color: #22543d;
+        }
+
+        .status-cancelled {
+            background: #fed7d7;
+            color: #742a2a;
+        }
+
+        .status-requested {
+            background: #fef5e7;
+            color: #744210;
+        }
+
+        .ride-details {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 20px;
+        }
+
+        .locations {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .location {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .location i {
+            width: 20px;
+            color: #667eea;
+        }
+
+        .ride-meta {
+            text-align: right;
+            color: #718096;
+            font-size: 0.9rem;
+        }
+
+        .price {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #48bb78;
+            margin-top: 5px;
+        }
+
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 30px;
+            margin: 60px 0;
+        }
+
+        .feature {
+            text-align: center;
+            color: white;
+        }
+
+        .feature i {
+            font-size: 3rem;
+            margin-bottom: 20px;
+            opacity: 0.9;
+        }
+
+        .feature h3 {
+            font-size: 1.3rem;
+            margin-bottom: 10px;
+        }
+
+        .feature p {
+            opacity: 0.8;
+            line-height: 1.6;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+                gap: 30px;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .auth-section, .booking-section {
+                padding: 25px;
+            }
+
+            .ride-type-selector {
+                grid-template-columns: 1fr;
+            }
+
+            .features {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .floating-animation {
+            animation: float 6s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+        }
+
+        .otp-container {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin: 20px 0;
+        }
+
+        .otp-input {
+            width: 50px;
+            height: 50px;
+            text-align: center;
+            font-size: 1.5rem;
+            font-weight: bold;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            background: rgba(255,255,255,0.8);
+        }
+
+        .otp-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header floating-animation">
+            <h1><i class="fas fa-car"></i> QuickRide</h1>
+            <p>Your reliable ride booking companion</p>
+        </div>
+
+        <!-- Features Section -->
+        <div class="features">
+            <div class="feature">
+                <i class="fas fa-clock"></i>
+                <h3>Quick Booking</h3>
+                <p>Book your ride in under 30 seconds with our streamlined process</p>
+            </div>
+            <div class="feature">
+                <i class="fas fa-shield-alt"></i>
+                <h3>Safe & Secure</h3>
+                <p>All rides are tracked and monitored for your safety</p>
+            </div>
+            <div class="feature">
+                <i class="fas fa-money-bill-wave"></i>
+                <h3>Best Prices</h3>
+                <p>Competitive pricing with transparent fare calculation</p>
+            </div>
+            <div class="feature">
+                <i class="fas fa-star"></i>
+                <h3>Quality Service</h3>
+                <p>Verified drivers with excellent customer ratings</p>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Authentication Section -->
+            <div class="auth-section">
+                <div id="login-form">
+                    <h2 class="section-title">Login to Continue</h2>
+                    <div id="auth-alert"></div>
+                    
+                    <div class="form-group">
+                        <label for="phoneNumber">Phone Number</label>
+                        <input type="tel" id="phoneNumber" class="form-input" placeholder="Enter 10-digit mobile number" maxlength="10">
+                    </div>
+                    
+                    <button id="send-otp-btn" class="btn btn-primary">
+                        Send OTP
+                    </button>
+                </div>
+
+                <div id="otp-form" class="hidden">
+                    <h2 class="section-title">Enter OTP</h2>
+                    <p style="text-align: center; margin-bottom: 20px; color: #718096;">
+                        OTP sent to <strong id="otp-phone"></strong>
+                    </p>
+                    
+                    <div class="otp-container">
+                        <input type="text" class="otp-input" maxlength="1" id="otp1">
+                        <input type="text" class="otp-input" maxlength="1" id="otp2">
+                        <input type="text" class="otp-input" maxlength="1" id="otp3">
+                        <input type="text" class="otp-input" maxlength="1" id="otp4">
+                        <input type="text" class="otp-input" maxlength="1" id="otp5">
+                        <input type="text" class="otp-input" maxlength="1" id="otp6">
+                    </div>
+                    
+                    <button id="verify-otp-btn" class="btn btn-primary">
+                        Verify OTP
+                    </button>
+                    
+                    <button id="resend-otp-btn" class="btn" style="margin-top: 10px; background: transparent; color: #667eea; border: 1px solid #667eea;">
+                        Resend OTP
+                    </button>
+                </div>
+
+                <div id="user-profile" class="hidden">
+                    <h2 class="section-title">Welcome!</h2>
+                    <div style="text-align: center; margin-bottom: 20px;">
+                        <i class="fas fa-user-circle" style="font-size: 4rem; color: #667eea; margin-bottom: 10px;"></i>
+                        <p>Phone: <strong id="user-phone"></strong></p>
+                    </div>
+                    <button id="logout-btn" class="btn" style="background: #e53e3e; color: white;">
+                        Logout
+                    </button>
+                </div>
+            </div>
+
+            <!-- Booking Section -->
+            <div class="booking-section">
+                <div id="booking-form" class="hidden">
+                    <h2 class="section-title">Book Your Ride</h2>
+                    <div id="booking-alert"></div>
+                    
+                    <div class="form-group">
+                        <label for="passengerName">Passenger Name</label>
+                        <input type="text" id="passengerName" class="form-input" placeholder="Enter your name">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="pickupLocation">Pickup Location</label>
+                        <input type="text" id="pickupLocation" class="form-input" placeholder="Enter pickup location">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="dropLocation">Drop Location</label>
+                        <input type="text" id="dropLocation" class="form-input" placeholder="Enter drop location">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Select Ride Type</label>
+                        <div class="ride-type-selector">
+                            <div class="ride-type" data-type="bike">
+                                <i class="fas fa-motorcycle"></i>
+                                <div class="name">Bike</div>
+                                <div class="price">₹8/km</div>
+                            </div>
+                            <div class="ride-type" data-type="auto">
+                                <i class="fas fa-truck"></i>
+                                <div class="name">Auto</div>
+                                <div class="price">₹12/km</div>
+                            </div>
+                            <div class="ride-type active" data-type="cab">
+                                <i class="fas fa-car"></i>
+                                <div class="name">Cab</div>
+                                <div class="price">₹15/km</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="scheduledDateTime">Scheduled Date & Time</label>
+                        <input type="datetime-local" id="scheduledDateTime" class="form-input">
+                    </div>
+                    
+                    <button id="book-ride-btn" class="btn btn-secondary">
+                        Book Ride
+                    </button>
+                </div>
+
+                <div id="ride-confirmation" class="hidden">
+                    <h2 class="section-title">Ride Confirmed!</h2>
+                    <div class="alert alert-success">
+                        <i class="fas fa-check-circle"></i>
+                        Your ride has been booked successfully
+                    </div>
+                    
+                    <div id="ride-details" style="background: rgba(102, 126, 234, 0.1); padding: 20px; border-radius: 12px; margin: 20px 0;">
+                        <!-- Ride details will be populated here -->
+                    </div>
+                    
+                    <button id="book-another-btn" class="btn btn-primary">
+                        Book Another Ride
+                    </button>
+                </div>
+
+                <div id="guest-message">
+                    <h2 class="section-title">Ready to Ride?</h2>
+                    <div style="text-align: center; color: #718096;">
+                        <i class="fas fa-mobile-alt" style="font-size: 4rem; margin-bottom: 20px; opacity: 0.7;"></i>
+                        <p>Please login with your phone number to book a ride</p>
+                        <p style="margin-top: 15px; font-size: 0.9rem;">
+                            <i class="fas fa-shield-alt"></i>
+                            Your phone number is secure and used only for ride coordination
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Ride History Section -->
+        <div id="ride-history-section" class="hidden" style="margin-top: 40px;">
+            <div class="auth-section" style="grid-column: 1 / -1;">
+                <h2 class="section-title">Your Recent Rides</h2>
+                <div id="rides-container">
+                    <!-- Ride history will be populated here -->
+                </div>
+                <button id="load-more-rides" class="btn" style="margin-top: 20px; background: transparent; color: #667eea; border: 1px solid #667eea;">
+                    Load More Rides
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class QuickRideApp {
+            constructor() {
+                this.currentUser = null;
+                this.authToken = localStorage.getItem('authToken');
+                this.selectedRideType = 'cab';
+                this.rides = [];
+                this.init();
+            }
+
+            init() {
+                this.bindEvents();
+                this.setMinDateTime();
+                
+                if (this.authToken) {
+                    this.showUserProfile();
+                    this.showBookingForm();
+                    this.loadRideHistory();
+                } else {
+                    this.showLoginForm();
+                }
+            }
+
+            bindEvents() {
+                // Auth events
+                document.getElementById('send-otp-btn').addEventListener('click', () => this.sendOTP());
+                document.getElementById('verify-otp-btn').addEventListener('click', () => this.verifyOTP());
+                document.getElementById('resend-otp-btn').addEventListener('click', () => this.sendOTP());
+                document.getElementById('logout-btn').addEventListener('click', () => this.logout());
+
+                // Booking events
+                document.getElementById('book-ride-btn').addEventListener('click', () => this.bookRide());
+                document.getElementById('book-another-btn').addEventListener('click', () => this.showBookingForm());
+
+                // Ride type selection
+                document.querySelectorAll('.ride-type').forEach(type => {
+                    type.addEventListener('click', (e) => this.selectRideType(e.currentTarget.dataset.type));
+                });
+
+                // OTP input handling
+                const otpInputs = document.querySelectorAll('.otp-input');
+                otpInputs.forEach((input, index) => {
+                    input.addEventListener('input', (e) => this.handleOTPInput(e, index));
+                    input.addEventListener('keydown', (e) => this.handleOTPKeydown(e, index));
+                });
+
+                // Phone number formatting
+                document.getElementById('phoneNumber').addEventListener('input', (e) => {
+                    e.target.value = e.target.value.replace(/\D/g, '').slice(0, 10);
+                });
+            }
+
+            setMinDateTime() {
+                const now = new Date();
+                now.setMinutes(now.getMinutes() + 30); // Minimum 30 minutes from now
+                const minDateTime = now.toISOString().slice(0, 16);
+                document.getElementById('scheduledDateTime').min = minDateTime;
+                document.getElementById('scheduledDateTime').value = minDateTime;
+            }
+
+            async sendOTP() {
+                const phoneNumber = document.getElementById('phoneNumber').value.trim();
+                
+                if (!this.validatePhoneNumber(phoneNumber)) {
+                    this.showAlert('auth-alert', 'Please enter a valid 10-digit phone number', 'error');
+                    return;
+                }
+
+                const btn = document.getElementById('send-otp-btn');
+                this.setButtonLoading(btn, true);
+
+                try {
+                    const response = await fetch('/api/auth/send-otp', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ phoneNumber })
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        document.getElementById('otp-phone').textContent = phoneNumber;
+                        this.showOTPForm();
+                        this.showAlert('auth-alert', 'OTP sent successfully!', 'success');
+                        
+                        // In development, show OTP in console
+                        if (data.otp) {
+                            console.log('Development OTP:', data.otp);
+                            this.showAlert('auth-alert', `Development OTP: ${data.otp}`, 'info');
+                        }
+                    } else {
+                        this.showAlert('auth-alert', data.error || 'Failed to send OTP', 'error');
+                    }
+                } catch (error) {
+                    this.showAlert('auth-alert', 'Network error. Please try again.', 'error');
+                } finally {
+                    this.setButtonLoading(btn, false);
+                }
+            }
+
+            async verifyOTP() {
+                const phoneNumber = document.getElementById('otp-phone').textContent;
+                const otp = this.getOTPValue();
+                
+                if (otp.length !== 6) {
+                    this.showAlert('auth-alert', 'Please enter complete OTP', 'error');
+                    return;
+                }
+
+                const btn = document.getElementById('verify-otp-btn');
+                this.setButtonLoading(btn, true);
+
+                try {
+                    const response = await fetch('/api/auth/verify-otp', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ phoneNumber, otp })
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        this.authToken = data.token;
+                        this.currentUser = data.user;
+                        localStorage.setItem('authToken', this.authToken);
+                        
+                        this.showUserProfile();
+                        this.showBookingForm();
+                        this.loadRideHistory();
+                        this.showAlert('auth-alert', 'Login successful!', 'success');
+                    } else {
+                        this.showAlert('auth-alert', data.error || 'Invalid OTP', 'error');
+                        this.clearOTP();
+                    }
+                } catch (error) {
+                    this.showAlert('auth-alert', 'Network error. Please try again.', 'error');
+                } finally {
+                    this.setButtonLoading(btn, false);
+                }
+            }
+
+            async bookRide() {
+                const passengerName = document.getElementById('passengerName').value.trim();
+                const pickupLocation = document.getElementById('pickupLocation').value.trim();
+                const dropLocation = document.getElementById('dropLocation').value.trim();
+                const scheduledDateTime = document.getElementById('scheduledDateTime').value;
+
+                if (!passengerName || !pickupLocation || !dropLocation || !scheduledDateTime) {
+                    this.showAlert('booking-alert', 'Please fill all fields', 'error');
+                    return;
+                }
+
+                const btn = document.getElementById('book-ride-btn');
+                this.setButtonLoading(btn, true);
+
+                try {
+                    const response = await fetch('/api/rides/book', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${this.authToken}`
+                        },
+                        body: JSON.stringify({
+                            passengerName,
+                            pickupLocation,
+                            dropLocation,
+                            rideType: this.selectedRideType,
+                            scheduledDateTime
+                        })
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        this.showRideConfirmation(data.ride);
+                        this.clearBookingForm();
+                    } else {
+                        this.showAlert('booking-alert', data.error || 'Failed to book ride', 'error');
+                    }
+                } catch (error) {
+                    this.showAlert('booking-alert', 'Network error. Please try again.', 'error');
+                } finally {
+                    this.setButtonLoading(btn, false);
+                }
+            }
+
+            async loadRideHistory() {
+                try {
+                    const response = await fetch('/api/rides', {
+                        headers: {
+                            'Authorization': `Bearer ${this.authToken}`
+                        }
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        this.rides = data.rides;
+                        this.displayRideHistory();
+                    }
+                } catch (error) {
+                    console.error('Error loading ride history:', error);
+                }
+            }
+
+            displayRideHistory() {
+                const container = document.getElementById('rides-container');
+                
+                if (this.rides.length === 0) {
+                    container.innerHTML = `
+                        <div style="text-align: center; color: #718096; padding: 40px;">
+                            <i class="fas fa-car" style="font-size: 3rem; margin-bottom: 20px; opacity: 0.3;"></i>
+                            <p>No rides found. Book your first ride!</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                container.innerHTML = this.rides.map(ride => `
+                    <div class="ride-card">
+                        <div class="ride-header">
+                            <div>
+                                <i class="fas fa-${this.getRideTypeIcon(ride.rideType)}"></i>
+                                <strong>${ride.rideType.toUpperCase()}</strong>
+                            </div>
+                            <span class="ride-status status-${ride.status}">${ride.status}</span>
+                        </div>
+                        <div class="ride-details">
+                            <div class="locations">
+                                <div class="location">
+                                    <i class="fas fa-map-marker-alt" style="color: #48bb78;"></i>
+                                    <span>${ride.pickupLocation}</span>
+                                </div>
+                                <div class="location">
+                                    <i class="fas fa-flag-checkered" style="color: #e53e3e;"></i>
+                                    <span>${ride.dropLocation}</span>
+                                </div>
+                            </div>
+                            <div class="ride-meta">
+                                <div>${this.formatDate(ride.scheduledDateTime)}</div>
+                                <div>${ride.distance} km</div>
+                                <div class="price">₹${ride.actualCost || ride.estimatedCost}</div>
+                                ${ride.rider ? `<div style="margin-top: 10px;">
+                                    <strong>${ride.rider.name}</strong><br>
+                                    <small>${ride.rider.vehicleModel} - ${ride.rider.vehicleNumber}</small>
+                                </div>` : ''}
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+
+                document.getElementById('ride-history-section').classList.remove('hidden');
+            }
+
+            // UI Helper Methods
+            showLoginForm() {
+                document.getElementById('login-form').classList.remove('hidden');
+                document.getElementById('otp-form').classList.add('hidden');
+                document.getElementById('user-profile').classList.add('hidden');
+                document.getElementById('booking-form').classList.add('hidden');
+                document.getElementById('ride-confirmation').classList.add('hidden');
+                document.getElementById('guest-message').classList.remove('hidden');
+            }
+
+            showOTPForm() {
+                document.getElementById('login-form').classList.add('hidden');
+                document.getElementById('otp-form').classList.remove('hidden');
+                document.querySelector('.otp-input').focus();
+            }
+
+            showUserProfile() {
+                document.getElementById('user-phone').textContent = this.currentUser?.phoneNumber || 'N/A';
+                document.getElementById('login-form').classList.add('hidden');
+                document.getElementById('otp-form').classList.add('hidden');
+                document.getElementById('user-profile').classList.remove('hidden');
+            }
+
+            showBookingForm() {
+                document.getElementById('booking-form').classList.remove('hidden');
+                document.getElementById('ride-confirmation').classList.add('hidden');
+                document.getElementById('guest-message').classList.add('hidden');
+            }
+
+            showRideConfirmation(ride) {
+                document.getElementById('booking-form').classList.add('hidden');
+                document.getElementById('ride-confirmation').classList.remove('hidden');
+                
+                document.getElementById('ride-details').innerHTML = `
+                    <div style="display: grid; gap: 15px;">
+                        <div style="display: flex; justify-content: between; align-items: center;">
+                            <strong style="font-size: 1.2rem;">Ride ID: ${ride.id}</strong>
+                            <span style="background: #48bb78; color: white; padding: 5px 15px; border-radius: 20px; font-size: 0.8rem;">CONFIRMED</span>
+                        </div>
+                        
+                        <div style="display: grid; gap: 10px;">
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <i class="fas fa-map-marker-alt" style="color: #48bb78; width: 20px;"></i>
+                                <span><strong>Pickup:</strong> ${ride.pickupLocation}</span>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <i class="fas fa-flag-checkered" style="color: #e53e3e; width: 20px;"></i>
+                                <span><strong>Drop:</strong> ${ride.dropLocation}</span>
+                            </div>
+                        </div>
+                        
+                        ${ride.rider ? `
+                        <div style="background: rgba(255,255,255,0.8); padding: 15px; border-radius: 8px; margin-top: 10px;">
+                            <h4 style="margin-bottom: 10px; color: #4a5568;">Driver Details</h4>
+                            <div style="display: grid; gap: 5px; font-size: 0.9rem;">
+                                <div><strong>Name:</strong> ${ride.rider.name}</div>
+                                <div><strong>Phone:</strong> ${ride.rider.phoneNumber}</div>
+                                <div><strong>Vehicle:</strong> ${ride.rider.vehicleModel} - ${ride.rider.vehicleNumber}</div>
+                                <div><strong>Rating:</strong> ⭐ ${ride.rider.rating}</div>
+                                <div><strong>ETA:</strong> ${ride.rider.eta}</div>
+                            </div>
+                        </div>
+                        ` : ''}
+                        
+                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-top: 15px; text-align: center;">
+                            <div>
+                                <div style="color: #718096; font-size: 0.8rem;">Distance</div>
+                                <div style="font-weight: bold;">${ride.distance} km</div>
+                            </div>
+                            <div>
+                                <div style="color: #718096; font-size: 0.8rem;">Ride Type</div>
+                                <div style="font-weight: bold;">${ride.rideType.toUpperCase()}</div>
+                            </div>
+                            <div>
+                                <div style="color: #718096; font-size: 0.8rem;">Fare</div>
+                                <div style="font-weight: bold; color: #48bb78; font-size: 1.2rem;">₹${ride.estimatedCost}</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            selectRideType(type) {
+                document.querySelectorAll('.ride-type').forEach(el => el.classList.remove('active'));
+                document.querySelector(`[data-type="${type}"]`).classList.add('active');
+                this.selectedRideType = type;
+            }
+
+            logout() {
+                this.authToken = null;
+                this.currentUser = null;
+                localStorage.removeItem('authToken');
+                this.showLoginForm();
+                document.getElementById('ride-history-section').classList.add('hidden');
+                this.clearAlerts();
+            }
+
+            clearBookingForm() {
+                document.getElementById('passengerName').value = '';
+                document.getElementById('pickupLocation').value = '';
+                document.getElementById('dropLocation').value = '';
+                this.setMinDateTime();
+            }
+
+            clearOTP() {
+                document.querySelectorAll('.otp-input').forEach(input => input.value = '');
+                document.querySelector('.otp-input').focus();
+            }
+
+            clearAlerts() {
+                document.getElementById('auth-alert').innerHTML = '';
+                document.getElementById('booking-alert').innerHTML = '';
+            }
+
+            // Utility Methods
+            validatePhoneNumber(phone) {
+                return /^[6-9]\d{9}$/.test(phone);
+            }
+
+            getOTPValue() {
+                return Array.from(document.querySelectorAll('.otp-input'))
+                    .map(input => input.value)
+                    .join('');
+            }
+
+            handleOTPInput(e, index) {
+                const value = e.target.value;
+                if (value.length === 1 && index < 5) {
+                    document.querySelectorAll('.otp-input')[index + 1].focus();
+                }
+            }
+
+            handleOTPKeydown(e, index) {
+                if (e.key === 'Backspace' && !e.target.value && index > 0) {
+                    document.querySelectorAll('.otp-input')[index - 1].focus();
+                }
+            }
+
+            setButtonLoading(btn, loading) {
+                if (loading) {
+                    btn.disabled = true;
+                    btn.innerHTML = '<span class="loading"><span class="spinner"></span>Please wait...</span>';
+                } else {
+                    btn.disabled = false;
+                    btn.innerHTML = btn.id === 'send-otp-btn' ? 'Send OTP' :
+                                  btn.id === 'verify-otp-btn' ? 'Verify OTP' :
+                                  btn.id === 'book-ride-btn' ? 'Book Ride' : btn.innerHTML;
+                }
+            }
+
+            showAlert(containerId, message, type) {
+                const container = document.getElementById(containerId);
+                container.innerHTML = `
+                    <div class="alert alert-${type}">
+                        <i class="fas fa-${type === 'success' ? 'check-circle' : 
+                                           type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
+                        ${message}
+                    </div>
+                `;
+                
+                setTimeout(() => {
+                    container.innerHTML = '';
+                }, 5000);
+            }
+
+            getRideTypeIcon(type) {
+                const icons = {
+                    bike: 'motorcycle',
+                    auto: 'truck',
+                    cab: 'car'
+                };
+                return icons[type] || 'car';
+            }
+
+            formatDate(dateString) {
+                const date = new Date(dateString);
+                return date.toLocaleString('en-IN', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+            }
+        }
+
+        // Initialize the app
+        document.addEventListener('DOMContentLoaded', () => {
+            new QuickRideApp();
+        });
+
+        // Add some visual effects
+        document.addEventListener('mousemove', (e) => {
+            const cursor = document.querySelector('.cursor');
+            if (cursor) {
+                cursor.style.left = e.clientX + 'px';
+                cursor.style.top = e.clientY + 'px';
+            }
+        });
+
+        // Add intersection observer for animations
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0)';
+                }
+            });
+        }, observerOptions);
+
+        // Observe elements for animation
+        document.querySelectorAll('.feature, .auth-section, .booking-section').forEach(el => {
+            el.style.opacity = '0';
+            el.style.transform = 'translateY(20px)';
+            el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+            observer.observe(el);
+        });
+    </script>
+</body>
+</html>
