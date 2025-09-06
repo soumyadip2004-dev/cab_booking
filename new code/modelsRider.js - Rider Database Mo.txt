@@ -1,0 +1,359 @@
+// models/Rider.js - Rider Database Model
+const mongoose = require('mongoose');
+
+const riderSchema = new mongoose.Schema({
+  name: {
+    type: String,
+    required: [true, 'Rider name is required'],
+    trim: true,
+    maxlength: [50, 'Name cannot exceed 50 characters']
+  },
+  phoneNumber: {
+    type: String,
+    required: [true, 'Phone number is required'],
+    unique: true,
+    match: [/^[6-9]\d{9}$/, 'Invalid phone number format']
+  },
+  email: {
+    type: String,
+    trim: true,
+    lowercase: true,
+    match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/, 'Invalid email format']
+  },
+  vehicleType: {
+    type: String,
+    enum: ['bike', 'auto', 'cab'],
+    required: [true, 'Vehicle type is required']
+  },
+  vehicleDetails: {
+    number: {
+      type: String,
+      required: [true, 'Vehicle number is required'],
+      unique: true,
+      uppercase: true
+    },
+    model: {
+      type: String,
+      required: [true, 'Vehicle model is required']
+    },
+    brand: String,
+    year: {
+      type: Number,
+      min: 2000,
+      max: new Date().getFullYear() + 1
+    },
+    color: String,
+    fuelType: {
+      type: String,
+      enum: ['petrol', 'diesel', 'cng', 'electric'],
+      default: 'petrol'
+    }
+  },
+  documents: {
+    license: {
+      number: String,
+      expiryDate: Date,
+      verified: {
+        type: Boolean,
+        default: false
+      }
+    },
+    aadhar: {
+      number: String,
+      verified: {
+        type: Boolean,
+        default: false
+      }
+    },
+    vehicleRC: {
+      number: String,
+      expiryDate: Date,
+      verified: {
+        type: Boolean,
+        default: false
+      }
+    },
+    insurance: {
+      number: String,
+      expiryDate: Date,
+      verified: {
+        type: Boolean,
+        default: false
+      }
+    },
+    photos: {
+      profile: String,
+      licenseImage: String,
+      vehicleImage: String,
+      rcImage: String
+    }
+  },
+  location: {
+    current: {
+      type: {
+        type: String,
+        enum: ['Point'],
+        default: 'Point'
+      },
+      coordinates: {
+        type: [Number], // [longitude, latitude]
+        default: [0, 0]
+      },
+      address: String,
+      timestamp: {
+        type: Date,
+        default: Date.now
+      }
+    },
+    serviceAreas: [{
+      name: String,
+      coordinates: [[Number]], // Polygon coordinates
+      isActive: {
+        type: Boolean,
+        default: true
+      }
+    }]
+  },
+  availability: {
+    isOnline: {
+      type: Boolean,
+      default: false
+    },
+    isAvailable: {
+      type: Boolean,
+      default: true
+    },
+    workingHours: {
+      start: {
+        type: String,
+        default: '06:00'
+      },
+      end: {
+        type: String,
+        default: '23:00'
+      }
+    },
+    breakTime: {
+      start: String,
+      end: String,
+      isOnBreak: {
+        type: Boolean,
+        default: false
+      }
+    }
+  },
+  ratings: {
+    average: {
+      type: Number,
+      default: 4.5,
+      min: 1,
+      max: 5
+    },
+    totalRatings: {
+      type: Number,
+      default: 0
+    },
+    breakdown: {
+      5: { type: Number, default: 0 },
+      4: { type: Number, default: 0 },
+      3: { type: Number, default: 0 },
+      2: { type: Number, default: 0 },
+      1: { type: Number, default: 0 }
+    }
+  },
+  stats: {
+    totalRides: {
+      type: Number,
+      default: 0
+    },
+    completedRides: {
+      type: Number,
+      default: 0
+    },
+    cancelledRides: {
+      type: Number,
+      default: 0
+    },
+    totalEarnings: {
+      type: Number,
+      default: 0
+    },
+    todayEarnings: {
+      type: Number,
+      default: 0
+    },
+    thisMonthEarnings: {
+      type: Number,
+      default: 0
+    },
+    acceptanceRate: {
+      type: Number,
+      default: 0
+    },
+    cancellationRate: {
+      type: Number,
+      default: 0
+    }
+  },
+  bankDetails: {
+    accountNumber: String,
+    ifscCode: String,
+    accountHolderName: String,
+    bankName: String,
+    isVerified: {
+      type: Boolean,
+      default: false
+    }
+  },
+  emergencyContact: {
+    name: String,
+    phone: String,
+    relation: String
+  },
+  status: {
+    type: String,
+    enum: ['pending', 'approved', 'suspended', 'rejected'],
+    default: 'pending'
+  },
+  isActive: {
+    type: Boolean,
+    default: true
+  },
+  lastActiveAt: {
+    type: Date,
+    default: Date.now
+  },
+  joinedAt: {
+    type: Date,
+    default: Date.now
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now
+  },
+  updatedAt: {
+    type: Date,
+    default: Date.now
+  }
+}, {
+  timestamps: true,
+  toJSON: { virtuals: true },
+  toObject: { virtuals: true }
+});
+
+// Create geospatial index for location queries
+riderSchema.index({ 'location.current': '2dsphere' });
+riderSchema.index({ vehicleType: 1, 'availability.isAvailable': 1 });
+riderSchema.index({ status: 1, isActive: 1 });
+
+// Update the updatedAt field before saving
+riderSchema.pre('save', function(next) {
+  this.updatedAt = new Date();
+  next();
+});
+
+// Instance method to update location
+riderSchema.methods.updateLocation = function(latitude, longitude, address) {
+  this.location.current = {
+    type: 'Point',
+    coordinates: [longitude, latitude],
+    address: address,
+    timestamp: new Date()
+  };
+  this.lastActiveAt = new Date();
+};
+
+// Instance method to toggle availability
+riderSchema.methods.toggleAvailability = function() {
+  this.availability.isAvailable = !this.availability.isAvailable;
+  this.lastActiveAt = new Date();
+};
+
+// Instance method to go online/offline
+riderSchema.methods.toggleOnlineStatus = function() {
+  this.availability.isOnline = !this.availability.isOnline;
+  this.lastActiveAt = new Date();
+  
+  // If going offline, also set as unavailable
+  if (!this.availability.isOnline) {
+    this.availability.isAvailable = false;
+  }
+};
+
+// Instance method to update rating
+riderSchema.methods.updateRating = function(newRating) {
+  // Update breakdown
+  this.ratings.breakdown[newRating] += 1;
+  this.ratings.totalRatings += 1;
+  
+  // Calculate new average
+  let totalPoints = 0;
+  for (let rating = 1; rating <= 5; rating++) {
+    totalPoints += rating * this.ratings.breakdown[rating];
+  }
+  
+  this.ratings.average = Math.round((totalPoints / this.ratings.totalRatings) * 10) / 10;
+};
+
+// Instance method to add earnings
+riderSchema.methods.addEarnings = function(amount) {
+  this.stats.totalEarnings += amount;
+  this.stats.todayEarnings += amount;
+  this.stats.thisMonthEarnings += amount;
+};
+
+// Static method to find available riders by vehicle type and location
+riderSchema.statics.findAvailableNearby = function(vehicleType, longitude, latitude, maxDistance = 5000) {
+  return this.find({
+    vehicleType,
+    status: 'approved',
+    isActive: true,
+    'availability.isOnline': true,
+    'availability.isAvailable': true,
+    'location.current': {
+      $near: {
+        $geometry: {
+          type: 'Point',
+          coordinates: [longitude, latitude]
+        },
+        $maxDistance: maxDistance
+      }
+    }
+  }).sort({ 'ratings.average': -1, 'stats.acceptanceRate': -1 });
+};
+
+// Static method to get top rated riders
+riderSchema.statics.getTopRated = function(vehicleType, limit = 10) {
+  const query = { status: 'approved', isActive: true };
+  if (vehicleType) {
+    query.vehicleType = vehicleType;
+  }
+  
+  return this.find(query)
+    .sort({ 'ratings.average': -1, 'ratings.totalRatings': -1 })
+    .limit(limit);
+};
+
+// Virtual for completion rate
+riderSchema.virtual('completionRate').get(function() {
+  if (this.stats.totalRides === 0) return 0;
+  return Math.round((this.stats.completedRides / this.stats.totalRides) * 100);
+});
+
+// Virtual for formatted vehicle info
+riderSchema.virtual('vehicleInfo').get(function() {
+  return `${this.vehicleDetails.brand || ''} ${this.vehicleDetails.model} - ${this.vehicleDetails.number}`.trim();
+});
+
+// Transform output to remove sensitive information
+riderSchema.methods.toJSON = function() {
+  const riderObject = this.toObject();
+  delete riderObject.documents.aadhar;
+  delete riderObject.documents.license;
+  delete riderObject.bankDetails;
+  return riderObject;
+};
+
+const Rider = mongoose.model('Rider', riderSchema);
+
+module.exports = Rider;

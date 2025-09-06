@@ -1,0 +1,483 @@
+// models/Ride.js - Ride Database Model
+const mongoose = require('mongoose');
+
+const rideSchema = new mongoose.Schema({
+  rideId: {
+    type: String,
+    unique: true,
+    required: true
+  },
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: [true, 'User ID is required']
+  },
+  riderId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Rider'
+  },
+  passengerDetails: {
+    name: {
+      type: String,
+      required: [true, 'Passenger name is required'],
+      trim: true
+    },
+    phone: String,
+    alternatePhone: String,
+    emergencyContact: {
+      name: String,
+      phone: String
+    }
+  },
+  pickupLocation: {
+    address: {
+      type: String,
+      required: [true, 'Pickup address is required']
+    },
+    coordinates: {
+      type: {
+        type: String,
+        enum: ['Point'],
+        default: 'Point'
+      },
+      coordinates: {
+        type: [Number], // [longitude, latitude]
+        required: true
+      }
+    },
+    landmark: String,
+    instructions: String
+  },
+  dropLocation: {
+    address: {
+      type: String,
+      required: [true, 'Drop address is required']
+    },
+    coordinates: {
+      type: {
+        type: String,
+        enum: ['Point'],
+        default: 'Point'
+      },
+      coordinates: {
+        type: [Number], // [longitude, latitude]
+        required: true
+      }
+    },
+    landmark: String,
+    instructions: String
+  },
+  rideType: {
+    type: String,
+    enum: ['bike', 'auto', 'cab'],
+    required: [true, 'Ride type is required']
+  },
+  scheduledDateTime: {
+    type: Date,
+    required: [true, 'Scheduled date and time is required']
+  },
+  actualStartTime: Date,
+  actualEndTime: Date,
+  distance: {
+    estimated: {
+      type: Number,
+      required: true,
+      min: 0
+    },
+    actual: {
+      type: Number,
+      min: 0
+    }
+  },
+  duration: {
+    estimated: Number, // in minutes
+    actual: Number // in minutes
+  },
+  pricing: {
+    baseFare: {
+      type: Number,
+      required: true,
+      min: 0
+    },
+    distanceFare: {
+      type: Number,
+      required: true,
+      min: 0
+    },
+    timeFare: {
+      type: Number,
+      default: 0,
+      min: 0
+    },
+    surgeMultiplier: {
+      type: Number,
+      default: 1.0,
+      min: 1.0
+    },
+    taxes: {
+      type: Number,
+      default: 0,
+      min: 0
+    },
+    discount: {
+      amount: {
+        type: Number,
+        default: 0,
+        min: 0
+      },
+      couponCode: String,
+      description: String
+    },
+    estimatedTotal: {
+      type: Number,
+      required: true,
+      min: 0
+    },
+    actualTotal: {
+      type: Number,
+      min: 0
+    }
+  },
+  status: {
+    type: String,
+    enum: [
+      'requested',      // Ride requested by user
+      'searching',      // Searching for rider
+      'accepted',       // Rider accepted the ride
+      'arrived',        // Rider arrived at pickup
+      'started',        // Ride started
+      'completed',      // Ride completed successfully
+      'cancelled_user', // Cancelled by user
+      'cancelled_rider',// Cancelled by rider
+      'cancelled_system',// Cancelled by system
+      'no_show'         // User didn't show up
+    ],
+    default: 'requested'
+  },
+  paymentDetails: {
+    method: {
+      type: String,
+      enum: ['cash', 'card', 'wallet', 'upi'],
+      default: 'cash'
+    },
+    status: {
+      type: String,
+      enum: ['pending', 'processing', 'completed', 'failed', 'refunded'],
+      default: 'pending'
+    },
+    transactionId: String,
+    paidAmount: {
+      type: Number,
+      min: 0
+    },
+    refundAmount: {
+      type: Number,
+      default: 0,
+      min: 0
+    },
+    refundReason: String
+  },
+  route: {
+    waypoints: [{
+      coordinates: [Number],
+      timestamp: Date,
+      speed: Number,
+      accuracy: Number
+    }],
+    actualRoute: String, // Encoded polyline
+    estimatedRoute: String // Encoded polyline
+  },
+  ratings: {
+    passengerToRider: {
+      rating: {
+        type: Number,
+        min: 1,
+        max: 5
+      },
+      feedback: String,
+      ratedAt: Date
+    },
+    riderToPassenger: {
+      rating: {
+        type: Number,
+        min: 1,
+        max: 5
+      },
+      feedback: String,
+      ratedAt: Date
+    }
+  },
+  issues: [{
+    type: {
+      type: String,
+      enum: ['delay', 'wrong_route', 'rude_behavior', 'vehicle_issue', 'other']
+    },
+    description: String,
+    reportedBy: {
+      type: String,
+      enum: ['passenger', 'rider']
+    },
+    reportedAt: {
+      type: Date,
+      default: Date.now
+    },
+    status: {
+      type: String,
+      enum: ['open', 'resolved', 'closed'],
+      default: 'open'
+    }
+  }],
+  specialRequests: [{
+    type: {
+      type: String,
+      enum: ['pet_friendly', 'wheelchair_accessible', 'child_seat', 'extra_luggage', 'ac_required']
+    },
+    description: String
+  }],
+  cancellation: {
+    cancelledBy: {
+      type: String,
+      enum: ['user', 'rider', 'system']
+    },
+    reason: String,
+    cancelledAt: Date,
+    cancellationFee: {
+      type: Number,
+      default: 0,
+      min: 0
+    }
+  },
+  eta: {
+    pickup: Number, // minutes
+    drop: Number    // minutes
+  },
+  notifications: [{
+    type: String,
+    message: String,
+    sentAt: {
+      type: Date,
+      default: Date.now
+    },
+    status: {
+      type: String,
+      enum: ['sent', 'delivered', 'read'],
+      default: 'sent'
+    }
+  }],
+  metadata: {
+    appVersion: String,
+    platform: {
+      type: String,
+      enum: ['android', 'ios', 'web']
+    },
+    deviceId: String,
+    bookingSource: {
+      type: String,
+      enum: ['app', 'web', 'call_center'],
+      default: 'web'
+    }
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now
+  },
+  updatedAt: {
+    type: Date,
+    default: Date.now
+  }
+}, {
+  timestamps: true,
+  toJSON: { virtuals: true },
+  toObject: { virtuals: true }
+});
+
+// Create indexes
+rideSchema.index({ rideId: 1 });
+rideSchema.index({ userId: 1, createdAt: -1 });
+rideSchema.index({ riderId: 1, createdAt: -1 });
+rideSchema.index({ status: 1, createdAt: -1 });
+rideSchema.index({ 'pickupLocation.coordinates': '2dsphere' });
+rideSchema.index({ 'dropLocation.coordinates': '2dsphere' });
+rideSchema.index({ scheduledDateTime: 1 });
+
+// Pre-save middleware to generate ride ID and update timestamps
+rideSchema.pre('save', function(next) {
+  if (this.isNew) {
+    // Generate unique ride ID
+    const timestamp = Date.now().toString(36);
+    const random = Math.random().toString(36).substring(2, 8);
+    this.rideId = `QR${timestamp}${random}`.toUpperCase();
+  }
+  
+  this.updatedAt = new Date();
+  next();
+});
+
+// Instance method to calculate actual fare
+rideSchema.methods.calculateActualFare = function() {
+  if (!this.distance.actual) return this.pricing.estimatedTotal;
+  
+  const baseFare = this.pricing.baseFare;
+  const distanceFare = this.distance.actual * (this.pricing.distanceFare / this.distance.estimated);
+  const surgeAmount = (baseFare + distanceFare) * (this.pricing.surgeMultiplier - 1);
+  const subtotal = baseFare + distanceFare + surgeAmount + this.pricing.timeFare;
+  const total = subtotal + this.pricing.taxes - this.pricing.discount.amount;
+  
+  this.pricing.actualTotal = Math.round(total * 100) / 100;
+  return this.pricing.actualTotal;
+};
+
+// Instance method to update status
+rideSchema.methods.updateStatus = function(newStatus, additionalData = {}) {
+  const now = new Date();
+  this.status = newStatus;
+  this.updatedAt = now;
+  
+  switch (newStatus) {
+    case 'started':
+      this.actualStartTime = now;
+      break;
+    case 'completed':
+      this.actualEndTime = now;
+      if (this.actualStartTime) {
+        this.duration.actual = Math.round((now - this.actualStartTime) / 60000); // minutes
+      }
+      break;
+    case 'cancelled_user':
+    case 'cancelled_rider':
+    case 'cancelled_system':
+      this.cancellation = {
+        cancelledBy: newStatus.split('_')[1] === 'user' ? 'user' : 
+                     newStatus.split('_')[1] === 'rider' ? 'rider' : 'system',
+        cancelledAt: now,
+        reason: additionalData.reason || 'No reason provided',
+        cancellationFee: additionalData.cancellationFee || 0
+      };
+      break;
+  }
+};
+
+// Instance method to add rating
+rideSchema.methods.addRating = function(ratingData, raterType) {
+  const ratingField = raterType === 'passenger' ? 'passengerToRider' : 'riderToPassenger';
+  
+  this.ratings[ratingField] = {
+    rating: ratingData.rating,
+    feedback: ratingData.feedback || '',
+    ratedAt: new Date()
+  };
+};
+
+// Instance method to add notification
+rideSchema.methods.addNotification = function(type, message) {
+  this.notifications.push({
+    type,
+    message,
+    sentAt: new Date()
+  });
+};
+
+// Instance method to add issue
+rideSchema.methods.addIssue = function(issueType, description, reportedBy) {
+  this.issues.push({
+    type: issueType,
+    description,
+    reportedBy,
+    reportedAt: new Date()
+  });
+};
+
+// Instance method to update route
+rideSchema.methods.updateRoute = function(coordinates, speed = null, accuracy = null) {
+  this.route.waypoints.push({
+    coordinates,
+    timestamp: new Date(),
+    speed,
+    accuracy
+  });
+};
+
+// Static method to get ride statistics
+rideSchema.statics.getStats = function(filters = {}) {
+  return this.aggregate([
+    { $match: filters },
+    {
+      $group: {
+        _id: null,
+        totalRides: { $sum: 1 },
+        completedRides: { $sum: { $cond: [{ $eq: ['$status', 'completed'] }, 1, 0] } },
+        cancelledRides: { $sum: { $cond: [{ $in: ['$status', ['cancelled_user', 'cancelled_rider', 'cancelled_system']] }, 1, 0] } },
+        totalRevenue: { $sum: '$pricing.actualTotal' },
+        averageRating: { $avg: '$ratings.passengerToRider.rating' },
+        averageDistance: { $avg: '$distance.actual' }
+      }
+    }
+  ]);
+};
+
+// Static method to find rides by location
+rideSchema.statics.findNearPickup = function(longitude, latitude, maxDistance = 5000) {
+  return this.find({
+    'pickupLocation.coordinates': {
+      $near: {
+        $geometry: {
+          type: 'Point',
+          coordinates: [longitude, latitude]
+        },
+        $maxDistance: maxDistance
+      }
+    }
+  });
+};
+
+// Virtual for ride duration in formatted string
+rideSchema.virtual('formattedDuration').get(function() {
+  const duration = this.duration.actual || this.duration.estimated;
+  if (!duration) return 'N/A';
+  
+  const hours = Math.floor(duration / 60);
+  const minutes = duration % 60;
+  
+  if (hours > 0) {
+    return `${hours}h ${minutes}m`;
+  }
+  return `${minutes}m`;
+});
+
+// Virtual for total fare with currency
+rideSchema.virtual('formattedFare').get(function() {
+  const fare = this.pricing.actualTotal || this.pricing.estimatedTotal;
+  return `₹${fare.toFixed(2)}`;
+});
+
+// Virtual for ride status display
+rideSchema.virtual('statusDisplay').get(function() {
+  const statusMap = {
+    'requested': 'Ride Requested',
+    'searching': 'Searching for Rider',
+    'accepted': 'Rider Assigned',
+    'arrived': 'Rider Arrived',
+    'started': 'Ride Started',
+    'completed': 'Completed',
+    'cancelled_user': 'Cancelled by User',
+    'cancelled_rider': 'Cancelled by Rider',
+    'cancelled_system': 'Cancelled',
+    'no_show': 'No Show'
+  };
+  
+  return statusMap[this.status] || this.status;
+});
+
+// Virtual for is cancellable
+rideSchema.virtual('isCancellable').get(function() {
+  return ['requested', 'searching', 'accepted', 'arrived'].includes(this.status);
+});
+
+// Virtual for is rateable
+rideSchema.virtual('isRateable').get(function() {
+  return this.status === 'completed' && !this.ratings.passengerToRider.rating;
+});
+
+const Ride = mongoose.model('Ride', rideSchema);
+
+module.exports = Ride;

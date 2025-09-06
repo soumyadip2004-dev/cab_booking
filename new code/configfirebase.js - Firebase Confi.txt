@@ -1,0 +1,261 @@
+// config/firebase.js - Firebase Configuration
+const admin = require('firebase-admin');
+const logger = require('../utils/logger');
+
+// Firebase Admin SDK Service Account Key
+// You'll need to download this from Firebase Console > Project Settings > Service Accounts
+const serviceAccount = {
+  "type": "service_account",
+  "project_id": process.env.FIREBASE_PROJECT_ID,
+  "private_key_id": process.env.FIREBASE_PRIVATE_KEY_ID,
+  "private_key": process.env.FIREBASE_PRIVATE_KEY ? process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n') : '',
+  "client_email": process.env.FIREBASE_CLIENT_EMAIL,
+  "client_id": process.env.FIREBASE_CLIENT_ID,
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": process.env.FIREBASE_CLIENT_CERT_URL
+};
+
+class FirebaseService {
+  constructor() {
+    this.initialized = false;
+    this.adminApp = null;
+  }
+
+  // Initialize Firebase Admin SDK
+  initialize() {
+    try {
+      if (this.initialized) {
+        return this.adminApp;
+      }
+
+      // Check if all required environment variables are present
+      const requiredVars = [
+        'FIREBASE_PROJECT_ID',
+        'FIREBASE_PRIVATE_KEY',
+        'FIREBASE_CLIENT_EMAIL'
+      ];
+
+      const missingVars = requiredVars.filter(varName => !process.env[varName]);
+      
+      if (missingVars.length > 0) {
+        logger.warn(`Firebase initialization skipped. Missing environment variables: ${missingVars.join(', ')}`);
+        return null;
+      }
+
+      // Initialize Firebase Admin
+      this.adminApp = admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount),
+        projectId: process.env.FIREBASE_PROJECT_ID
+      });
+
+      this.initialized = true;
+      logger.info('Firebase Admin SDK initialized successfully');
+      return this.adminApp;
+
+    } catch (error) {
+      logger.error('Firebase initialization error:', error);
+      return null;
+    }
+  }
+
+  // Verify Firebase ID token
+  async verifyIdToken(idToken) {
+    try {
+      if (!this.adminApp) {
+        throw new Error('Firebase not initialized');
+      }
+
+      const decodedToken = await this.adminApp.auth().verifyIdToken(idToken);
+      return {
+        success: true,
+        user: {
+          uid: decodedToken.uid,
+          phoneNumber: decodedToken.phone_number,
+          email: decodedToken.email,
+          verified: decodedToken.phone_number_verified || false
+        }
+      };
+    } catch (error) {
+      logger.error('Firebase token verification error:', error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+
+  // Create custom token for user
+  async createCustomToken(uid, additionalClaims = {}) {
+    try {
+      if (!this.adminApp) {
+        throw new Error('Firebase not initialized');
+      }
+
+      const customToken = await this.adminApp.auth().createCustomToken(uid, additionalClaims);
+      return {
+        success: true,
+        token: customToken
+      };
+    } catch (error) {
+      logger.error('Firebase custom token creation error:', error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+
+  // Get user by phone number
+  async getUserByPhoneNumber(phoneNumber) {
+    try {
+      if (!this.adminApp) {
+        throw new Error('Firebase not initialized');
+      }
+
+      // Ensure phone number is in E.164 format
+      const formattedPhone = phoneNumber.startsWith('+') ? phoneNumber : `+91${phoneNumber}`;
+      
+      const userRecord = await this.adminApp.auth().getUserByPhoneNumber(formattedPhone);
+      return {
+        success: true,
+        user: {
+          uid: userRecord.uid,
+          phoneNumber: userRecord.phoneNumber,
+          email: userRecord.email,
+          disabled: userRecord.disabled,
+          customClaims: userRecord.customClaims
+        }
+      };
+    } catch (error) {
+      if (error.code === 'auth/user-not-found') {
+        return {
+          success: false,
+          error: 'User not found',
+          code: 'USER_NOT_FOUND'
+        };
+      }
+      
+      logger.error('Firebase get user by phone error:', error);
+      return {
+        success: false,
+        error: error.message,
+        code: error.code
+      };
+    }
+  }
+
+  // Create user with phone number
+  async createUser(phoneNumber, additionalData = {}) {
+    try {
+      if (!this.adminApp) {
+        throw new Error('Firebase not initialized');
+      }
+
+      const formattedPhone = phoneNumber.startsWith('+') ? phoneNumber : `+91${phoneNumber}`;
+      
+      const userRecord = await this.adminApp.auth().createUser({
+        phoneNumber: formattedPhone,
+        ...additionalData
+      });
+
+      return {
+        success: true,
+        user: {
+          uid: userRecord.uid,
+          phoneNumber: userRecord.phoneNumber,
+          email: userRecord.email
+        }
+      };
+    } catch (error) {
+      logger.error('Firebase create user error:', error);
+      return {
+        success: false,
+        error: error.message,
+        code: error.code
+      };
+    }
+  }
+
+  // Update user
+  async updateUser(uid, updateData) {
+    try {
+      if (!this.adminApp) {
+        throw new Error('Firebase not initialized');
+      }
+
+      const userRecord = await this.adminApp.auth().updateUser(uid, updateData);
+      return {
+        success: true,
+        user: {
+          uid: userRecord.uid,
+          phoneNumber: userRecord.phoneNumber,
+          email: userRecord.email
+        }
+      };
+    } catch (error) {
+      logger.error('Firebase update user error:', error);
+      return {
+        success: false,
+        error: error.message,
+        code: error.code
+      };
+    }
+  }
+
+  // Set custom claims for user
+  async setCustomUserClaims(uid, customClaims) {
+    try {
+      if (!this.adminApp) {
+        throw new Error('Firebase not initialized');
+      }
+
+      await this.adminApp.auth().setCustomUserClaims(uid, customClaims);
+      return {
+        success: true,
+        message: 'Custom claims set successfully'
+      };
+    } catch (error) {
+      logger.error('Firebase set custom claims error:', error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+
+  // Delete user
+  async deleteUser(uid) {
+    try {
+      if (!this.adminApp) {
+        throw new Error('Firebase not initialized');
+      }
+
+      await this.adminApp.auth().deleteUser(uid);
+      return {
+        success: true,
+        message: 'User deleted successfully'
+      };
+    } catch (error) {
+      logger.error('Firebase delete user error:', error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+
+  // Check if Firebase is available
+  isAvailable() {
+    return this.initialized && this.adminApp !== null;
+  }
+}
+
+// Create singleton instance
+const firebaseService = new FirebaseService();
+
+// Auto-initialize on module load
+firebaseService.initialize();
+
+module.exports = firebaseService;
