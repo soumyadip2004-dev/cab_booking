@@ -1,0 +1,33 @@
+{
+  "name": "cab_booking",
+  "version": "1.0.0",
+  "description": "",
+  "main": "restructured_server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/soumyadip2004-dev/cab_booking.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/soumyadip2004-dev/cab_booking/issues"
+  },
+  "homepage": "https://github.com/soumyadip2004-dev/cab_booking#readme",
+  "dependencies": {
+    "compression": "^1.8.1",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.2",
+    "express": "^5.1.0",
+    "express-rate-limit": "^8.1.0",
+    "express-validator": "^7.2.1",
+    "helmet": "^8.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.18.0",
+    "twilio": "^5.9.0",
+    "winston": "^3.17.0"
+  }
+}

@@ -87,12 +87,12 @@ app.get('/', (req, res) => {
 });
 
 // 404 handler
-app.use('*', (req, res) => {
-  res.status(404).json({
-    success: false,
-    error: 'Route not found'
+  app.all('*', (req, res) => {
+    res.status(404).json({
+      success: false,
+      error: 'Route not found'
+    });
   });
-});
 
 // Global Error Handler
 app.use(errorHandler);
